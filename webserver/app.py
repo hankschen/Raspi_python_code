@@ -1,12 +1,8 @@
 '''
-
 Adapted excerpt from Getting Started with Raspberry Pi by Matt Richardson
-
 Modified by Rui Santos
 Complete project details: http://randomnerdtutorials.com
-
 '''
-
 import RPi.GPIO as GPIO
 from flask import Flask, render_template, request
 app = Flask(__name__)
@@ -67,3 +63,4 @@ def action(changePin, action):
 
 if __name__ == "__main__":
    app.run(host='0.0.0.0', port=80, debug=True)
+   #app.run(host='192.168.58.252', port=80, debug=True)
