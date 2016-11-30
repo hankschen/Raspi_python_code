@@ -106,7 +106,6 @@ def main():
             RH, T = getSensorData()
             print RH
             print T
-
             gas = int(round(readadc(3) / 1.024))  # MQ2 in port:3
             print gas
 
