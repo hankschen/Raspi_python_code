@@ -10,6 +10,9 @@ import spidev
 import smbus
 import time
 import os
+import MFRC522
+import signal
+uid = [0,0,0,0]
 
 PIR_PIN = 11
 GPIO.setmode(GPIO.BOARD)
@@ -35,21 +38,30 @@ ONE_TIME_LOW_RES_MODE = 0X23
 # bus = smbus.SMBus(0) # Rev 1 Pi uses 0
 bus = smbus.SMBus(1)  # Rev 2 Pi uses 1
 
+######### RFID ###############################################
+# Capture SIGINT for cleanup when the script is aborted
+def end_read(signal,frame):
+    global continue_reading
+    print "Ctrl+C captured, ending read."
+    continue_reading = False
+    GPIO.cleanup()
+# Hook the SIGINT
+signal.signal(signal.SIGINT, end_read)
+# Create an object of the class MFRC522
+MIFAREReader = MFRC522.MFRC522()
+######### RFID ###############################################
 
 def convertToNumber(data):
     # Simple function to cinvert 2 bytes of data
     # into a decimal number
     return ((data[1] + (256 * data[0])) / 1.2)
 
-
 def readLight(addr=DEVICE):
     data = bus.read_i2c_block_data(addr, ONE_TIME_HIGH_RES_MODE_1)
     return convertToNumber(data)
 
-
 spi = spidev.SpiDev()
 spi.open(0, 0)
-
 
 def readadc(adcnum):
     if adcnum > 7 or adcnum < 0:
@@ -59,14 +71,13 @@ def readadc(adcnum):
     adcount = ((r[1] & 3) << 8) + r[2]
     return adcount
 
-
 def getSensorData():
     RH, T = Adafruit_DHT.read_retry(Adafruit_DHT.DHT11, 23)
     # return dict
     return (str(RH), str(T))
 
-
 def main():
+    #use sys.argv if needed
     if len(sys.argv) < 2:
         print('Usage:python tstest.py PRIVATE_KEY')
         exit(0)
@@ -76,6 +87,22 @@ def main():
 
     while True:
         try:
+            ######### RFID ###############
+            # Scan for cards
+            (status, TagType) = MIFAREReader.MFRC522_Request(MIFAREReader.PICC_REQIDL)
+            # If a card is found
+            if status == MIFAREReader.MI_OK:
+                print "Card detected"
+            # Get the UID of the card
+            (status, uid) = MIFAREReader.MFRC522_Anticoll()
+            # If we have the UID, continue
+            if status == MIFAREReader.MI_OK:
+                # Print UID
+                print "Card read UID: " + str(uid[0]) + "," + str(uid[1]) + "," + str(uid[2]) + "," + str(uid[3])
+            else:
+                uid[0,0,0,1]
+            ######### RFID ###############
+
             RH, T = getSensorData()
             print RH
             print T
@@ -97,7 +124,6 @@ def main():
         except:
             print "exiting."
             break  # call main
-
 
 if __name__ == '__main__':
     main()
